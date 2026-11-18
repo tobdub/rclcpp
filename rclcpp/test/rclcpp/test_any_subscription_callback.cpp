@@ -170,6 +170,50 @@ TEST_F(TestAnySubscriptionCallback, is_serialized_message_callback) {
   }
 }
 
+TEST_F(TestAnySubscriptionCallback, serialized_message_shared_with_const_callbacks) {
+  using rclcpp::MessageInfo;
+  using rclcpp::SerializedMessage;
+  auto serialized_message = std::make_shared<SerializedMessage>();
+  const SerializedMessage * received = nullptr;
+  // dispatch serialized_message, and return the message that the callback received
+  auto dispatch = [&](auto callback) {
+      rclcpp::AnySubscriptionCallback<test_msgs::msg::Empty> asc;
+      asc.set(callback);
+      asc.dispatch(serialized_message, MessageInfo{});
+      return received;
+    };
+
+  EXPECT_EQ(
+    serialized_message.get(),
+    dispatch([&](std::shared_ptr<const SerializedMessage> msg) {received = msg.get();}));
+  EXPECT_EQ(
+    serialized_message.get(),
+    dispatch(
+      [&](std::shared_ptr<const SerializedMessage> msg, const MessageInfo &) {
+        received = msg.get();
+      }));
+  EXPECT_EQ(
+    serialized_message.get(),
+    dispatch([&](const std::shared_ptr<const SerializedMessage> & msg) {received = msg.get();}));
+  EXPECT_EQ(
+    serialized_message.get(),
+    dispatch(
+      [&](const std::shared_ptr<const SerializedMessage> & msg, const MessageInfo &) {
+        received = msg.get();
+      }));
+
+  // callbacks that can modify the message get a copy
+  EXPECT_NE(
+    serialized_message.get(),
+    dispatch([&](std::shared_ptr<SerializedMessage> msg) {received = msg.get();}));
+  EXPECT_NE(
+    serialized_message.get(),
+    dispatch(
+      [&](std::shared_ptr<SerializedMessage> msg, const MessageInfo &) {
+        received = msg.get();
+      }));
+}
+
 TEST_F(TestAnySubscriptionCallback, unset_dispatch_throw) {
   EXPECT_THROW(
     any_subscription_callback_.dispatch(msg_shared_ptr_, message_info_),

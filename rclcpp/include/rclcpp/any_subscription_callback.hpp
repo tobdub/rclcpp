@@ -681,15 +681,17 @@ public:
             message_info);
         } else if constexpr (  // NOLINT[readability/braces]
           std::is_same_v<T, SharedConstPtrSerializedMessageCallback>||
-          std::is_same_v<T, ConstRefSharedConstPtrSerializedMessageCallback>||
-          std::is_same_v<T, SharedPtrSerializedMessageCallback>)
+          std::is_same_v<T, ConstRefSharedConstPtrSerializedMessageCallback>)
         {
-          callback(create_serialized_message_unique_ptr_from_shared_ptr(serialized_message));
+          callback(serialized_message);
         } else if constexpr (  // NOLINT[readability/braces]
           std::is_same_v<T, SharedConstPtrSerializedMessageWithInfoCallback>||
-          std::is_same_v<T, ConstRefSharedConstPtrSerializedMessageWithInfoCallback>||
-          std::is_same_v<T, SharedPtrSerializedMessageWithInfoCallback>)
+          std::is_same_v<T, ConstRefSharedConstPtrSerializedMessageWithInfoCallback>)
         {
+          callback(serialized_message, message_info);
+        } else if constexpr (std::is_same_v<T, SharedPtrSerializedMessageCallback>) {
+          callback(create_serialized_message_unique_ptr_from_shared_ptr(serialized_message));
+        } else if constexpr (std::is_same_v<T, SharedPtrSerializedMessageWithInfoCallback>) {
           callback(
             create_serialized_message_unique_ptr_from_shared_ptr(serialized_message),
             message_info);
